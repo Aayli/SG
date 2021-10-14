@@ -1,13 +1,15 @@
-# with sr.AudioFile('hello.wav') as source1:
-# 	audio1 = r.record(source1)
-# u = r.recognize_google(audio1)
-# print(u)
-
+# https://www.g7smy.co.uk/2013/08/recording-sound-on-the-raspberry-pi/
+# https://iotbytes.wordpress.com/connect-configure-and-test-usb-microphone-and-speaker-with-raspberry-pi/
 
 import random
 import time
 import speech_recognition as sr
-# import RPi.GPIO as GPIO
+import RPi.GPIO as GPIO
+
+
+BLUE_LED = 17
+RED_LED = 27
+YELLOW_LED = 22
 
 
 def recognize_speech_from_mic(recognizer, microphone):
@@ -51,7 +53,7 @@ def recognize_speech_from_mic(recognizer, microphone):
     return response
 
 
-def ask_untill_success(recognizer, microphone):
+def ask_until_success(recognizer, microphone):
     print('Tell command\n')
     response = recognize_speech_from_mic(recognizer, microphone)
     while response["error"]:
@@ -64,47 +66,51 @@ def ask_untill_success(recognizer, microphone):
 def execute_instruction(instruction):
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
-    GPIO.setup(7, GPIO.OUT)
-    GPIO.setup(8, GPIO.OUT)
-    GPIO.setup(9, GPIO.OUT)
-    GPIO.setup(0, GPIO.OUT)
-    GPIO.setup(2, GPIO.OUT)
-    GPIO.setup(3, GPIO.OUT)
-    GPIO.setup(23, GPIO.OUT)
-    motor = GPIO.PWM(23, 50)
-    motor.start(7.5)
-    match instruction:
-        case 'Turn on first led':
-            GPIO.output(8, GPIO.HIGH)
-        case 'Turn on second led':
-            GPIO.output(9, GPIO.HIGH)
-        case 'Turn off first led':
-            GPIO.output(8, GPIO.LOW)
-        case 'Turn off second led':
-            GPIO.output(9, GPIO.LOW)
-        case 'Turn motor towards 0 degree':
-            motor.ChangeDutyCycle(2.5)
-        case 'Turn motor towards 90 degree':
-            motor.ChangeDutyCycle(7.5)
-        case 'Turn motor towards 180 degree':
-            motor.ChangeDutyCycle(12.5)
-        case 'Turn on':
-            print("Which one?")
-            match ask_untill_success():
-                case 'First':
-                    GPIO.output(8, GPIO.HIGH)
-                case 'Second':
-                    GPIO.output(9, GPIO.HIGH)
-        case 'Turn off':
-            print("Which one?")
-            match ask_untill_success():
-                case 'First':
-                    GPIO.output(8, GPIO.LOW)
-                case 'Second':
-                    GPIO.output(9, GPIO.LOW)
-        case _:
-            print('Unknown instruction.\n')
-    motor.stop()
+    GPIO.setup(RED_LED,GPIO.OUT)
+    switcher={
+        'włącz':lambda:GPIO.output(RED_LED,GPIO.HIGH),
+        'wyłącz':lambda:GPIO.output(RED_LED,GPIO.LOW)
+        }
+    func=switcher.get(instruction,lambda :'Invalid')
+    return func()
+#     motor = GPIO.PWM(23, 50)
+#     motor.start(7.5)
+#     match instruction:
+#         case 'Włącz 1 led':
+#             GPIO.setup(RED_LED,GPIO.OUT)
+#             GPIO.output(RED_LED,GPIO.HIGH)
+#             time.sleep(1)
+#             GPIO.output(RED_LED,GPIO.LOW)
+#             GPIO.setup(RED_LED,GPIO.IN)
+#         case 'Turn on second led':
+#             GPIO.output(9, GPIO.HIGH)
+#         case 'Turn off first led':
+#             GPIO.output(8, GPIO.LOW)
+#         case 'Turn off second led':
+#             GPIO.output(9, GPIO.LOW)
+#         case 'Turn motor towards 0 degree':
+#             motor.ChangeDutyCycle(2.5)
+#         case 'Turn motor towards 90 degree':
+#             motor.ChangeDutyCycle(7.5)
+#         case 'Turn motor towards 180 degree':
+#             motor.ChangeDutyCycle(12.5)
+#         case 'Turn on':
+#             print("Which one?")
+#             match ask_until_success():
+#                 case 'First':
+#                     GPIO.output(8, GPIO.HIGH)
+#                 case 'Second':
+#                     GPIO.output(9, GPIO.HIGH)
+#         case 'Turn off':
+#             print("Which one?")
+#             match ask_until_success():
+#                 case 'First':
+#                     GPIO.output(8, GPIO.LOW)
+#                 case 'Second':
+#                     GPIO.output(9, GPIO.LOW)
+#         case _:
+#             print('Unknown instruction.\n')
+#     motor.stop()
 
 
 if __name__ == "__main__":
@@ -122,10 +128,11 @@ if __name__ == "__main__":
     time.sleep(3)
 
     while True:
-        instruction = ask_untill_success(recognizer, microphone)
+        instruction = ask_until_success(recognizer, microphone)
         print("Powiedziałeś: {}".format(instruction))
-        # execute_instruction(instruction)
+        execute_instruction(instruction)
 
         if instruction == 'exit':
+            GPIO.cleanup()
             print("Bye bye!")
             break

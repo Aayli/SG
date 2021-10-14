@@ -7,7 +7,7 @@
 import random
 import time
 import speech_recognition as sr
-import RPi.GPIO as GPIO
+# import RPi.GPIO as GPIO
 
 
 def recognize_speech_from_mic(recognizer, microphone):
@@ -108,14 +108,14 @@ def execute_instruction(instruction):
 
 
 if __name__ == "__main__":
-    API = ["włacz x led", "wyłącz x led", "zamigaj x ledem x razy"
+    API = ["włacz x led", "wyłącz x led", "zamigaj x ledem", "zamigaj x ledem x razy",
            "obróć silnik o x stopni", "exit"]
 
     recognizer = sr.Recognizer()
     microphone = sr.Microphone()
 
     start_msg = (
-        "Hi I'm RasspberryPi, what can I do for you:\n"
+        "Jestem RasspberryPi, co mogę zrobić dla cb:\n"
         "{api}\n".format(api=', '.join(API))
     )
     print(start_msg)
@@ -123,9 +123,9 @@ if __name__ == "__main__":
 
     while True:
         instruction = ask_untill_success(recognizer, microphone)
-        print("You said: {}".format(instruction["transcription"]))
-        execute_instruction(instruction)
+        print("Powiedziałeś: {}".format(instruction))
+        # execute_instruction(instruction)
 
-        if instruction["transcription"] == 'exit':
+        if instruction == 'exit':
             print("Bye bye!")
             break

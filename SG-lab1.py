@@ -10,8 +10,8 @@ import RPi.GPIO as GPIO
 BLUE_LED = 17
 RED_LED = 27
 YELLOW_LED = 22
-GREEN_LED = 21
-SERVO_PIN = 12
+GREEN_LED = 12
+SERVO_PIN = 21
 
 
 def recognize_speech_from_mic(recognizer, microphone):
@@ -79,8 +79,10 @@ def execute_instruction(instruction):
     switcher={
         'włącz':lambda:switch_on_led(words[1]),
         'wyłącz':lambda:switch_off_led(words[1]),
-        'zamigaj':lambda:blink(words[1],words[3]),
-        'rozświetl':lambda:light_up()
+        'przełącz':lambda:blink(words[1],words[3]),
+        'rozjaśnij':lambda:light_up(),
+        'zgaś':lambda:light_down(),
+        'ustaw':lambda:set_servo(words[4])
         }
     func=switcher.get(words[0],lambda :'Invalid')
     return func()
@@ -93,19 +95,20 @@ def switch_on_led(color):
     'zieloną':lambda:GPIO.output(GREEN_LED, GPIO.HIGH),
     }
     func=switcher.get(color,lambda :'Invalid')
-    return func
+    return func()
 
 def switch_off_led(color):
     switcher={
-    'czerwony':lambda:GPIO.output(RED_LED, GPIO.LOW),
-    'niebieski':lambda:GPIO.output(BLUE_LED, GPIO.LOW),
-    'żółty':lambda:GPIO.output(YELLOW_LED, GPIO.LOW),
+    'czerwoną':lambda:GPIO.output(RED_LED, GPIO.LOW),
+    'niebieską':lambda:GPIO.output(BLUE_LED, GPIO.LOW),
+    'żółtą':lambda:GPIO.output(YELLOW_LED, GPIO.LOW),
     'zieloną':lambda:GPIO.output(GREEN_LED, GPIO.LOW),
     }
     func=switcher.get(color,lambda :'Invalid')
-    return func
+    return func()
 
 def blink(color, number=1):
+    number = int(number)
     for i in range(number):
         switch_on_led(color)
         time.sleep(0.5)
@@ -113,12 +116,16 @@ def blink(color, number=1):
         time.sleep(0.5)
 
 def set_servo(degree):
-    filling = degree/180*5+5
-    # motor = GPIO.PWM(SERVO_PIN, 50)
-    # motor.start(filling)
-    # time.sleep(1)
-    # motor.stop()
-    print("Ustawiono wypełnienie na {:.2f}%".format(filling))
+    degree = int(degree)
+    if 0 <= degree <= 180:
+        filling = degree/180*5+5
+        # motor = GPIO.PWM(SERVO_PIN, 50)
+        # motor.start(filling)
+        # time.sleep(1)
+        # motor.stop()
+        print("Ustawiono wypełnienie sygnału na {:.2f}%".format(filling))
+    else:
+        print("Niewłaściwy zakres kąta. Kąt musi należeć do zakresu <0, 180>")
 
 def light_up():
     led = GPIO.PWM(GREEN_LED, 50)
@@ -127,6 +134,9 @@ def light_up():
         led.ChangeDutyCycle(bright)
         time.sleep(0.02)
     led.stop()
+    time.sleep(0.02)
+    GPIO.output(GREEN_LED, GPIO.HIGH)
+
 
 def light_down():
     led = GPIO.PWM(GREEN_LED, 50)
@@ -135,6 +145,8 @@ def light_down():
         led.ChangeDutyCycle(bright)
         time.sleep(0.02)
     led.stop()
+    GPIO.output(GREEN_LED, GPIO.LOW)
+
 
 
 
@@ -160,5 +172,5 @@ if __name__ == "__main__":
 
         if instruction == 'exit':
             GPIO.cleanup()
-            print("Bye bye!")
+            print("Pa pa!")
             break

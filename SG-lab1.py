@@ -10,6 +10,7 @@ import RPi.GPIO as GPIO
 BLUE_LED = 17
 RED_LED = 27
 YELLOW_LED = 22
+GREEN_LED = 21
 SERVO_PIN = 12
 
 
@@ -66,9 +67,10 @@ def ask_until_success(recognizer, microphone):
 def GPIO_setup():
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
-    GPIO.setup(RED_LED,GPIO.OUT)
-    GPIO.setup(BLUE_LED,GPIO.OUT)
-    GPIO.setup(YELLOW_LED,GPIO.OUT)
+    GPIO.setup(RED_LED, GPIO.OUT)
+    GPIO.setup(BLUE_LED, GPIO.OUT)
+    GPIO.setup(YELLOW_LED, GPIO.OUT)
+    GPIO.setup(GREEN_LED, GPIO.OUT)
     GPIO.setup(SERVO_PIN, GPIO.OUT)
 
 def execute_instruction(instruction):
@@ -77,25 +79,28 @@ def execute_instruction(instruction):
     switcher={
         'włącz':lambda:switch_on_led(words[1]),
         'wyłącz':lambda:switch_off_led(words[1]),
-        'zamigaj':lambda:blink(words[1],words[3])
+        'zamigaj':lambda:blink(words[1],words[3]),
+        'rozświetl':lambda:light_up()
         }
     func=switcher.get(words[0],lambda :'Invalid')
     return func()
 
 def switch_on_led(color):
     switcher={
-    'czerwoną':lambda:GPIO.output(RED_LED,GPIO.HIGH),
-    'niebieską':lambda:GPIO.output(BLUE_LED,GPIO.HIGH),
-    'żółtą':lambda:GPIO.output(YELLOW_LED,GPIO.HIGH),
+    'czerwoną':lambda:GPIO.output(RED_LED, GPIO.HIGH),
+    'niebieską':lambda:GPIO.output(BLUE_LED, GPIO.HIGH),
+    'żółtą':lambda:GPIO.output(YELLOW_LED, GPIO.HIGH),
+    'zieloną':lambda:GPIO.output(GREEN_LED, GPIO.HIGH),
     }
     func=switcher.get(color,lambda :'Invalid')
     return func
 
 def switch_off_led(color):
     switcher={
-    'czerwony':lambda:GPIO.output(RED_LED,GPIO.LOW),
-    'niebieski':lambda:GPIO.output(BLUE_LED,GPIO.LOW),
-    'żółty':lambda:GPIO.output(YELLOW_LED,GPIO.LOW),
+    'czerwony':lambda:GPIO.output(RED_LED, GPIO.LOW),
+    'niebieski':lambda:GPIO.output(BLUE_LED, GPIO.LOW),
+    'żółty':lambda:GPIO.output(YELLOW_LED, GPIO.LOW),
+    'zieloną':lambda:GPIO.output(GREEN_LED, GPIO.LOW),
     }
     func=switcher.get(color,lambda :'Invalid')
     return func
@@ -114,6 +119,22 @@ def set_servo(degree):
     # time.sleep(1)
     # motor.stop()
     print("Ustawiono wypełnienie na {:.2f}%".format(filling))
+
+def light_up():
+    led = GPIO.PWM(GREEN_LED, 50)
+    led.start(0)
+    for bright in range(100):
+        led.ChangeDutyCycle(bright)
+        time.sleep(0.02)
+    led.stop()
+
+def light_down():
+    led = GPIO.PWM(GREEN_LED, 50)
+    led.start(0)
+    for bright in range(100,0,-1):
+        led.ChangeDutyCycle(bright)
+        time.sleep(0.02)
+    led.stop()
 
 
 

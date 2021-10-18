@@ -10,6 +10,7 @@ import RPi.GPIO as GPIO
 BLUE_LED = 17
 RED_LED = 27
 YELLOW_LED = 22
+SERVO_PIN = 12
 
 
 def recognize_speech_from_mic(recognizer, microphone):
@@ -54,67 +55,70 @@ def recognize_speech_from_mic(recognizer, microphone):
 
 
 def ask_until_success(recognizer, microphone):
-    print('Tell command\n')
+    print('Podaj komende\n')
     response = recognize_speech_from_mic(recognizer, microphone)
     while response["error"]:
         print("ERROR: {}\n".format(response["error"]),
-              "Pelease tell your command again.\n")
+              "Nie rozpoznano. Proszę powtórz komende\n")
         response = recognize_speech_from_mic(recognizer, microphone)
     return response["transcription"]
 
-
-def execute_instruction(instruction):
+def GPIO_setup():
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
     GPIO.setup(RED_LED,GPIO.OUT)
+    GPIO.setup(BLUE_LED,GPIO.OUT)
+    GPIO.setup(YELLOW_LED,GPIO.OUT)
+    GPIO.setup(SERVO_PIN, GPIO.OUT)
+
+def execute_instruction(instruction):
+    instruction = instruction.lower()
+    words = instruction.split()
     switcher={
-        'włącz':lambda:GPIO.output(RED_LED,GPIO.HIGH),
-        'wyłącz':lambda:GPIO.output(RED_LED,GPIO.LOW)
+        'włącz':lambda:switch_on_led(words[1]),
+        'wyłącz':lambda:switch_off_led(words[1]),
+        'zamigaj':lambda:blink(words[1],words[3])
         }
-    func=switcher.get(instruction,lambda :'Invalid')
+    func=switcher.get(words[0],lambda :'Invalid')
     return func()
-#     motor = GPIO.PWM(23, 50)
-#     motor.start(7.5)
-#     match instruction:
-#         case 'Włącz 1 led':
-#             GPIO.setup(RED_LED,GPIO.OUT)
-#             GPIO.output(RED_LED,GPIO.HIGH)
-#             time.sleep(1)
-#             GPIO.output(RED_LED,GPIO.LOW)
-#             GPIO.setup(RED_LED,GPIO.IN)
-#         case 'Turn on second led':
-#             GPIO.output(9, GPIO.HIGH)
-#         case 'Turn off first led':
-#             GPIO.output(8, GPIO.LOW)
-#         case 'Turn off second led':
-#             GPIO.output(9, GPIO.LOW)
-#         case 'Turn motor towards 0 degree':
-#             motor.ChangeDutyCycle(2.5)
-#         case 'Turn motor towards 90 degree':
-#             motor.ChangeDutyCycle(7.5)
-#         case 'Turn motor towards 180 degree':
-#             motor.ChangeDutyCycle(12.5)
-#         case 'Turn on':
-#             print("Which one?")
-#             match ask_until_success():
-#                 case 'First':
-#                     GPIO.output(8, GPIO.HIGH)
-#                 case 'Second':
-#                     GPIO.output(9, GPIO.HIGH)
-#         case 'Turn off':
-#             print("Which one?")
-#             match ask_until_success():
-#                 case 'First':
-#                     GPIO.output(8, GPIO.LOW)
-#                 case 'Second':
-#                     GPIO.output(9, GPIO.LOW)
-#         case _:
-#             print('Unknown instruction.\n')
-#     motor.stop()
+
+def switch_on_led(color):
+    switcher={
+    'czerwoną':lambda:GPIO.output(RED_LED,GPIO.HIGH),
+    'niebieską':lambda:GPIO.output(BLUE_LED,GPIO.HIGH),
+    'żółtą':lambda:GPIO.output(YELLOW_LED,GPIO.HIGH),
+    }
+    func=switcher.get(color,lambda :'Invalid')
+    return func
+
+def switch_off_led(color):
+    switcher={
+    'czerwony':lambda:GPIO.output(RED_LED,GPIO.LOW),
+    'niebieski':lambda:GPIO.output(BLUE_LED,GPIO.LOW),
+    'żółty':lambda:GPIO.output(YELLOW_LED,GPIO.LOW),
+    }
+    func=switcher.get(color,lambda :'Invalid')
+    return func
+
+def blink(color, number=1):
+    for i in range(number):
+        switch_on_led(color)
+        time.sleep(0.5)
+        switch_off_led(color)
+        time.sleep(0.5)
+
+def set_servo(degree):
+    filling = degree/180*5+5
+    # motor = GPIO.PWM(SERVO_PIN, 50)
+    # motor.start(filling)
+    # time.sleep(1)
+    # motor.stop()
+    print("Ustawiono wypełnienie na {:.2f}%".format(filling))
+
 
 
 if __name__ == "__main__":
-    API = ["włacz x led", "wyłącz x led", "zamigaj x ledem", "zamigaj x ledem x razy",
+    API = ["włacz x diodę", "wyłącz x diodę", "zamigaj x diodą", "zamigaj x diodą x razy",
            "obróć silnik o x stopni", "exit"]
 
     recognizer = sr.Recognizer()
@@ -125,7 +129,8 @@ if __name__ == "__main__":
         "{api}\n".format(api=', '.join(API))
     )
     print(start_msg)
-    time.sleep(3)
+    time.sleep(1)
+    GPIO_setup()
 
     while True:
         instruction = ask_until_success(recognizer, microphone)
